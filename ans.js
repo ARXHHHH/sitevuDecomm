@@ -1,80 +1,79 @@
 --- a/components/FloorPlan/FloorPlanTreeView/Structure2/TreeViewRowRightClick.js
 +++ b/components/FloorPlan/FloorPlanTreeView/Structure2/TreeViewRowRightClick.js
-@@ componentDidUpdate(prevProps) {
--    // Insert transformedRack into filteredRackResults if it exists
--    const updatedRackResults = [...(filteredRackResults || []), ...(transformedRack ? [transformedRack] : [])];
-+    // Insert transformedRack into filteredRackResults if it exists
-+    const updatedRackResults = [...(filteredRackResults || []), ...(transformedRack ? [transformedRack] : [])];
-     console.log('filtered result', updatedRackResults); //data stored here
-
--  const isFilterResultsChanged =
--    !this.processedFilterResults ||
--    prevProps.filteredRackResults !== filteredRackResults;
-+  // detect if our *combined* results really changed
-+  const isFilterResultsChanged =
-+    !this.processedFilterResults ||
-+    JSON.stringify(this.processedFilterResults) !== JSON.stringify(updatedRackResults);
-
--  if (isFilterResultsChanged && filteredRackResults && filteredRackResults.length > 0 && !expanded) {
--    // Set a flag to avoid reprocessing the same filtered results
--    this.processedFilterResults = filteredRackResults;
-+  if (isFilterResultsChanged && updatedRackResults.length > 0 && !expanded) {
-+    // remember we already processed *this* exact set of results
-+    this.processedFilterResults = updatedRackResults;
-
-     // Check if this node matches filtered results (simplified logic)
-     let shouldExpand = false;
-
--    // Use a lookup object instead of multiple if/else statements
--    const levelChecks = {
--      0: () => filteredRackResults.some(r => /* … */),
-+    // Re-use updatedRackResults for all level checks
-+    const levelChecks = {
-+      0: () => updatedRackResults.some(r => /* your existing siteId / clliCd check */),
-       1: () => updatedRackResults.some(r => /* … */),
-       2: () => updatedRackResults.some(r => /* … */),
-       3: () => updatedRackResults.some(r => /* … */),
-       4: () => updatedRackResults.some(r => /* … */)
-     };
-
-     const checkFn = levelChecks[parentLevel];
-     if (checkFn) {
-       shouldExpand = checkFn();
+@@ class TreeViewRowRightClick extends React.Component {
+     constructor() {
+       super();
+       this.state = {
+         filter: '',
+         filteredData: null,
+       };
      }
-
--    // Only trigger expand if necessary
--    if (shouldExpand && !rowData.expanded && this.props.onExpandClick) {
--      // Debounce expansion to prevent UI freezing
--      setTimeout(() => {
--        this.props.onExpandClick(rowData, index, parentLevel, ancestorData, filteredRackResults);
--      }, 0);
--    }
-+    // Only trigger expand if necessary, passing our combined updatedRackResults
-+    if (shouldExpand && !rowData.expanded && this.props.onExpandClick) {
-+      setTimeout(() => {
-+        this.props.onExpandClick(
-+          rowData,
-+          index,
-+          parentLevel,
-+          ancestorData,
-+          updatedRackResults
-+        );
-+      }, 0);
++
++    // 1) On mount, try to self-expand
++    componentDidMount() {
++      this.tryAutoExpand();
 +    }
-   }
-
-   // —— your existing treePathToExpand block —— 
--  if (matchValue === treePathToExpand[level] && !expanded) {
--    this.props.onExpandClick(rowData, index, parentLevel, ancestorData);
--  }
-+  if (matchValue === treePathToExpand[level] && !expanded) {
-+    // also pass updatedRackResults here
-+    this.props.onExpandClick(
-+      rowData,
-+      index,
-+      parentLevel,
-+      ancestorData,
-+      updatedRackResults
-+    );
-+  }
- }
+ 
+-    componentDidUpdate(prevProps) {
+-      const { treePathToExpand, selectedLocateRack, filteredRackResults, keyIds, rowData, ancestorData, index, parentLevel, expanded } = this.props;
+-      // … all of your coworker’s old filtered-rack and treePathToExpand logic …
+-    }
++    // 2) On any relevant prop change, re-attempt
++    componentDidUpdate(prevProps) {
++      if (
++        prevProps.selectedLocateRack !== this.props.selectedLocateRack ||
++        prevProps.rowData.expanded    !== this.props.rowData.expanded
++      ) {
++        this.tryAutoExpand();
++      }
++    }
+ 
+     onSelectItem = (e) => {
+       e.preventDefault();
+@@ (around handleFilter)
+     handleFilter = (e) => {
+       if (!e.target.value) {
+         this.setState({
+           filter: e.target.value,
+           filteredData: null,
+           showFilter: false,
+         });
+         return;
+       }
+       this.setFilteredData(this.props, e.target.value);
+     }
++
++    // 3) Build the path from selectedLocateRack and auto-expand level by level
++    tryAutoExpand = () => {
++      const { selectedLocateRack, parentLevel, rowData, onExpandClick, index, ancestorData } = this.props;
++      if (!selectedLocateRack) return;
++
++      // derive path[0]=siteCd, [1]=struct, [2]=floor, [3]=subclass, [4]=vendor
++      const path = [
++        selectedLocateRack.siteCd,
++        selectedLocateRack.struct,
++        selectedLocateRack.floor,
++        selectedLocateRack.subclass,
++        selectedLocateRack.vendor
++      ];
++
++      // nothing to do if out of bounds or already expanded
++      if (parentLevel >= path.length || rowData.expanded) return;
++
++      // figure out this node’s value at `parentLevel`
++      const myValue = [
++        rowData.siteCd,
++        rowData.struct    || rowData.sctructNmTxt,
++        rowData.floor     || rowData.floorNmTxt,
++        rowData.eqpType   || rowData.subClass,
++        rowData.vendorName|| rowData.vendor
++      ][parentLevel];
++
++      // if it matches, trigger your expand callback
++      if (myValue === path[parentLevel]) {
++        onExpandClick(rowData, index, parentLevel, ancestorData);
++      }
++    }
+ 
+     getEquipmentColorClass = (rowData) => {
+       if(rowData.type){
