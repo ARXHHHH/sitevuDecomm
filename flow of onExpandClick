@@ -1,0 +1,95 @@
+The onExpandClick function is a key part of the tree structure in your application. It is responsible for handling the expansion of nodes in the tree view. Below is a detailed explanation of how onExpandClick works, its parameters, and the flow of related functions across the provided files.
+
+1. Definition of onExpandClick
+The onExpandClick function is defined in TreeStructure2.js:
+onExpandClick = (rowData, index, treeLevel, ancestorData, filteredRackResults) => {
+  const list = listToAccess[treeLevel];
+  this.props.getDataForTree2(index, list, rowData, ancestorData, filteredRackResults);
+};
+
+Parameters
+rowData: The data object for the current node being expanded. It contains information about the node, such as its ID, name, and other properties.
+index: The index of the current node in the parent array. This helps identify the position of the node in the tree structure.
+treeLevel: The level of the tree where the current node resides. For example:
+Level 0: Sites
+Level 1: Structures
+Level 2: Floors
+Level 3: Equipment Types
+Level 4: Vendors
+Level 5: Racks
+ancestorData: An array containing the data of all ancestor nodes leading up to the current node. This provides context about the hierarchy of the current node.
+filteredRackResults: An optional array of filtered rack results. This is used to pass additional data related to racks when expanding nodes.
+What It Does
+Determines the List to Access:
+
+The listToAccess object maps the treeLevel to a specific list name (e.g., sitesList2, structuresList2, etc.).
+Based on the treeLevel, it determines which list to fetch data for.
+Dispatches an Action:
+
+Calls the getDataForTree2 function (passed as a prop) to fetch data for the next level of the tree.
+Passes the index, list, rowData, ancestorData, and filteredRackResults as arguments.
+2. Flow of onExpandClick
+Step 1: Triggered in TreeViewRowRightClick.js
+The onExpandClick function is triggered when a node in the tree is expanded. This happens in the TreeViewRowRightClick component:
+onExpandClick(rowData, index, parentLevel, ancestorData, path);
+
+Here, the onExpandClick function is called with the following parameters:
+
+rowData: The data for the current node.
+index: The index of the current node.
+parentLevel: The level of the current node in the tree.
+ancestorData: The data of all ancestor nodes.
+path: The derived path for the node.
+Step 2: Passed to TreeStructure2.js
+The onExpandClick function in TreeStructure2.js is invoked. It determines the list to access based on the treeLevel and dispatches the getDataForTree2 action.
+
+Step 3: Dispatches getDataForTree2 Action
+The getDataForTree2 function is defined in FloorPlanActions.js:
+export const getDataForTree2 = (index, list, rowData, ancestorData, filteredRackResults) => ({
+  type: types.GET_FLOORPLAN_TREE_DATA_SAGA_2,
+  index,
+  list,
+  rowData,
+  ancestorData,
+  filteredRackResults,
+});
+
+This action creates an object with the following properties:
+
+type: The action type (GET_FLOORPLAN_TREE_DATA_SAGA_2).
+index: The index of the current node.
+list: The list to fetch data for.
+rowData: The data for the current node.
+ancestorData: The data of all ancestor nodes.
+filteredRackResults: Additional data related to racks.
+Step 4: Handled in a Saga
+The action is handled by a saga in FloorPlan.js. Specifically, the requestFloorplanTreeData2 saga processes the action:
+function* requestFloorplanTreeData2(action) {
+  try {
+    const { index, list, rowData, ancestorData, filteredRackResults } = action;
+    switch (list) {
+      case 'sitesList2':
+        // Fetch data for sites
+        break;
+      case 'structuresList2':
+        // Fetch data for structures
+        break;
+      case 'floorsList2':
+        // Fetch data for floors
+        break;
+      case 'eqpTypeList2':
+        // Fetch data for equipment types
+        break;
+      case 'vendorList2':
+        // Fetch data for vendors
+        break;
+      case 'racksList2':
+        // Fetch data for racks
+        break;
+      default:
+        break;
+    }
+  } catch (error) {
+    console.error(error.message);
+  }
+}
