@@ -36,13 +36,14 @@ export default class FloorPlanTreeView extends React.Component {
     setSelectedData: PropTypes.func.isRequired,
     selectedFloorId: PropTypes.number,
     indexPath: PropTypes.array,
-    treePathToExpand:PropTypes.array,
+    
     selectedLocateRack:PropTypes.object,
     filteredRackResults: PropTypes.array,
   };
 static defaultProps = {
   // ... existing props
   filteredRackResults: [],
+  selectedLocateRack: {},
 };
   constructor() {
     super();
@@ -71,6 +72,8 @@ static defaultProps = {
     };
 
   }
+   
+  
 
   componentWillReceiveProps(nextProps) {
     if (nextProps.treeLevelSelected === 'sub') {
@@ -287,6 +290,7 @@ static defaultProps = {
     const { selectedItems, rightSelectedItems } = this.state;
     const [currentSelected, ...nextSelected] = selectedItems;
     const [currentRightSelected, ...nextRightSelected] = rightSelectedItems;
+    console.log('selectedLocateRack during render:', this.props.selectedLocateRack);
     return (
       <div className="floorplan-tree-view">
         <ul className="tree" key={this.state.loading}>
@@ -312,7 +316,7 @@ static defaultProps = {
                 rightSelectedItems={currentRightSelected === index ? nextRightSelected : []}
                 preventRerender={this.state.loading}
                 key={`tree-0-${index}`}
-                treePathToExpand={this.props.treePathToExpand}
+                
                 selectedLocateRack={this.props.selectedLocateRack}
                 filteredRackResults={this.props.filteredRackResults}
               />
