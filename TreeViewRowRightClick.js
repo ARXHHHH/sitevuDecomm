@@ -28,7 +28,7 @@ class TreeViewRowRightClick extends React.Component {
       filterText: PropTypes.any,
       isFiltered: PropTypes.bool,
       filterOnLevel: PropTypes.object,
-      treePathToExpand:PropTypes.array,
+     
       selectedLocateRack:PropTypes.object,
     };
 
@@ -52,6 +52,9 @@ class TreeViewRowRightClick extends React.Component {
       };
     }
 
+    componentDidMount() {
+    this.tryAutoExpand
+    }
     componentWillReceiveProps(nextProps) {
       if (this.state.filteredData) {
         this.setFilteredData(nextProps, this.state.filter);
@@ -62,69 +65,86 @@ class TreeViewRowRightClick extends React.Component {
       return (this.props.parentLevel !== 0 || !nextProps.preventRerender);
     }
 
-    componentDidUpdate(prevProps) {
-      const { treePathToExpand, selectedLocateRack,filteredRackResults,keyIds, rowData,ancestorData, index, parentLevel, expanded } = this.props;
-  const [currentKeyId] = keyIds;
-  // Only process filtered results if they've actually changed
-  const isFilterResultsChanged =
-    !this.processedFilterResults ||
-    prevProps.filteredRackResults !== filteredRackResults;
+//     componentDidUpdate(prevProps) {
+//       const {  selectedLocateRack,filteredRackResults,keyIds, rowData,ancestorData, index, parentLevel, expanded } = this.props;
+//   const [currentKeyId] = keyIds;
+//   // Only process filtered results if they've actually changed
+//   if (prevProps.selectedLocateRack !== this.props.selectedLocateRack) {
+//     console.log('selectedLocateRack updated:', this.props.selectedLocateRack);
 
-  // Only try to expand when we have new filtered results
-  if (isFilterResultsChanged && filteredRackResults && filteredRackResults.length > 0 && !expanded) {
-    // Set a flag to avoid reprocessing the same filtered results
-    this.processedFilterResults = filteredRackResults;
 
-    // Check if this node matches filtered results (simplified logic)
-    let shouldExpand = false;
+//   }
 
-    // Use a lookup object instead of multiple if/else statements
-    const levelChecks = {
-      0: () => filteredRackResults.some(r => r.siteId === rowData.siteId && rowData.clliCd),
-      1: () => filteredRackResults.some(r => r.struct && (r.struct === rowData.struct || r.struct === rowData.sctructNmTxt)),
-      2: () => filteredRackResults.some(r => r.floor && (r.floor === rowData.floor || r.floor === rowData.floorNmTxt)),
-      3: () => filteredRackResults.some(r => r.eqpType && (r.eqpType === rowData.eqpType || r.eqpType === rowData.subClass)),
-      4: () => filteredRackResults.some(r => r.vendorName && (r.vendorName === rowData.vendorName || r.vendorName === rowData.vendor))
-    };
+//   console.log('Row Data in componentDidUpdate:', rowData.siteCd);
 
-    // Check if we have a function for this parentLevel
-    const checkFn = levelChecks[parentLevel];
-    if (checkFn) {
-      shouldExpand = checkFn();
-    }
+//     // let updatedRackResults = filteredRackResults || this.props.filteredRackResults;
 
-    // Only trigger expand if necessary
-    if (shouldExpand && !rowData.expanded && this.props.onExpandClick) {
-      // Debounce expansion to prevent UI freezing
-      setTimeout(() => {
-        this.props.onExpandClick(rowData, index, parentLevel, ancestorData, filteredRackResults);
-      }, 0);
-    }
-  }
+//     // if (selectedLocateRack && (!filteredRackResults || filteredRackResults.length === 0)) {
+//     //   console.log('Inserting selectedLocateRack into filteredRackResults:', selectedLocateRack);
+//     //   updatedRackResults = [selectedLocateRack]; // Create a new array with selectedLocateRack
+//     // }
+//     let transformedRack = null;
+//     if (selectedLocateRack) {
+//       transformedRack = {
+//         floor: selectedLocateRack.floor || null,
+//         struct: selectedLocateRack.struct || null,
+//         vendorName: selectedLocateRack.vendor || null,
+//         rackPos: selectedLocateRack.rackPos || null,
+//         siteId: selectedLocateRack.siteId || null,
+//         eqpType: selectedLocateRack.subClass || null, // Add a default value if needed
+//       };
+//     }
+  
+//     // Insert transformedRack into filteredRackResults if it exists
+//     const updatedRackResults = [...(filteredRackResults || []), ...(transformedRack ? [transformedRack] : [])];
+//   console.log('filtered result', updatedRackResults); //data stored here
 
-      if (treePathToExpand !== prevProps.treePathToExpand && Array.isArray(treePathToExpand)) {
+//   const isFilterResultsChanged =
+//    !this.processedFilterResults ||
+//     JSON.stringify(this.processedFilterResults) !== JSON.stringify(updatedRackResults);
 
-        const level = parentLevel;
-        let matchValue;
-        switch(level) {
-          case 0: matchValue = rowData.siteCd; break;
-          case 1: matchValue = rowData.sctructNmTxt || rowData.struct; break;
-          case 2: matchValue = rowData.floorNmTxt || rowData.floor; break;
-          case 3:
+//   // Only try to expand when we have new filtered results
+//   if (isFilterResultsChanged  && updatedRackResults.length > 0 && !expanded) {
+//     // Set a flag to avoid reprocessing the same filtered results
+//     this.processedFilterResults = updatedRackResults;
 
-            matchValue = rowData.eqpType || rowData.subClass;
-                break;
-          case 4: matchValue = rowData.vendorName || rowData.vendor; break;
-          case 5: matchValue = rowData.rackPosCd || rowData.rackPos; break;
-          default: matchValue = null;
-            }
+//     // Check if this node matches filtered results (simplified logic)
+//     let shouldExpand = false;
 
-        if (matchValue === treePathToExpand[level] && !expanded) {
-          this.props.onExpandClick(rowData, index, parentLevel, ancestorData);
-          }
+//     // Use a lookup object instead of multiple if/else statements
+//     const levelChecks = {
+//       0: () => updatedRackResults.some(r => r.siteId === rowData.siteId && rowData.clliCd),
+//       1: () => updatedRackResults.some(r => r.struct && (r.struct === rowData.struct || r.struct === rowData.sctructNmTxt)),
+//       2: () => updatedRackResults.some(r => r.floor && (r.floor === rowData.floor || r.floor === rowData.floorNmTxt)),
+//       3: () => updatedRackResults.some(r => r.eqpType && (r.eqpType === rowData.eqpType || r.eqpType === rowData.subClass)),
+//       4: () => updatedRackResults.some(r => r.vendorName && (r.vendorName === rowData.vendorName || r.vendorName === rowData.vendor))
+//     };
+
+//     // Check if we have a function for this parentLevel
+//     const checkFn = levelChecks[parentLevel];
+//     if (checkFn) {
+//       shouldExpand = checkFn();
+//     }
+
+//     // Only trigger expand if necessary
+//     if (shouldExpand && !rowData.expanded && this.props.onExpandClick) {
+//       // Debounce expansion to prevent UI freezing
+//       setTimeout(() => {
+//         this.props.onExpandClick(rowData, index, parentLevel, ancestorData, updatedRackResults);
+//       }, 0);
+//     }
+//   }
+
+// }
+
+componentDidUpdate(prevProps) {
+        if (
+          prevProps.selectedLocateRack !== this.props.selectedLocateRack ||
+          prevProps.rowData.expanded    !== this.props.rowData.expanded
+        ) {
+          this.tryAutoExpand();
+        }
       }
-    }
-
     onSelectItem = (e) => {
       e.preventDefault();
 
@@ -189,6 +209,39 @@ class TreeViewRowRightClick extends React.Component {
       }
       this.setFilteredData(this.props, e.target.value);
     }
+
+    tryAutoExpand = () => {
+            const { selectedLocateRack, parentLevel, rowData, onExpandClick, index, ancestorData } = this.props;
+            if (!selectedLocateRack) return;
+
+            //const level=ancestorData.length;
+      console.log("heyyyyy");
+            // derive path[0]=siteCd, [1]=struct, [2]=floor, [3]=subclass, [4]=vendor
+            const path = [
+              selectedLocateRack.siteCd,
+              selectedLocateRack.struct,
+              selectedLocateRack.floor,
+              selectedLocateRack.subclass,
+              selectedLocateRack.vendor
+            ];
+      
+            // nothing to do if out of bounds or already expanded
+            if (parentLevel >= path.length || rowData.expanded) return;
+      
+            // figure out this node’s value at `parentLevel`
+            const myValue = [
+              rowData.siteCd,
+              rowData.struct    || rowData.sctructNmTxt,
+              rowData.floor     || rowData.floorNmTxt,
+              rowData.eqpType   || rowData.subClass,
+              rowData.vendorName|| rowData.vendor
+            ][parentLevel];
+      
+            // if it matches, trigger your expand callback
+            // if (myValue === path[index]) {
+              onExpandClick(rowData, index, parentLevel, ancestorData,path);
+            // }
+          }
 
     getEquipmentColorClass = (rowData) => {
       if(rowData.type){
