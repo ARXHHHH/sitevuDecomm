@@ -1,79 +1,52 @@
---- a/components/FloorPlan/FloorPlanTreeView/Structure2/TreeViewRowRightClick.js
-+++ b/components/FloorPlan/FloorPlanTreeView/Structure2/TreeViewRowRightClick.js
-@@ class TreeViewRowRightClick extends React.Component {
-     constructor() {
-       super();
-       this.state = {
-         filter: '',
-         filteredData: null,
-       };
-     }
-+
-+    // 1) On mount, try to self-expand
-+    componentDidMount() {
-+      this.tryAutoExpand();
-+    }
- 
--    componentDidUpdate(prevProps) {
--      const { treePathToExpand, selectedLocateRack, filteredRackResults, keyIds, rowData, ancestorData, index, parentLevel, expanded } = this.props;
--      // … all of your coworker’s old filtered-rack and treePathToExpand logic …
--    }
-+    // 2) On any relevant prop change, re-attempt
-+    componentDidUpdate(prevProps) {
-+      if (
-+        prevProps.selectedLocateRack !== this.props.selectedLocateRack ||
-+        prevProps.rowData.expanded    !== this.props.rowData.expanded
-+      ) {
-+        this.tryAutoExpand();
-+      }
-+    }
- 
-     onSelectItem = (e) => {
-       e.preventDefault();
-@@ (around handleFilter)
-     handleFilter = (e) => {
-       if (!e.target.value) {
-         this.setState({
-           filter: e.target.value,
-           filteredData: null,
-           showFilter: false,
-         });
-         return;
-       }
-       this.setFilteredData(this.props, e.target.value);
-     }
-+
-+    // 3) Build the path from selectedLocateRack and auto-expand level by level
-+    tryAutoExpand = () => {
-+      const { selectedLocateRack, parentLevel, rowData, onExpandClick, index, ancestorData } = this.props;
-+      if (!selectedLocateRack) return;
-+
-+      // derive path[0]=siteCd, [1]=struct, [2]=floor, [3]=subclass, [4]=vendor
-+      const path = [
-+        selectedLocateRack.siteCd,
-+        selectedLocateRack.struct,
-+        selectedLocateRack.floor,
-+        selectedLocateRack.subclass,
-+        selectedLocateRack.vendor
-+      ];
-+
-+      // nothing to do if out of bounds or already expanded
-+      if (parentLevel >= path.length || rowData.expanded) return;
-+
-+      // figure out this node’s value at `parentLevel`
-+      const myValue = [
-+        rowData.siteCd,
-+        rowData.struct    || rowData.sctructNmTxt,
-+        rowData.floor     || rowData.floorNmTxt,
-+        rowData.eqpType   || rowData.subClass,
-+        rowData.vendorName|| rowData.vendor
-+      ][parentLevel];
-+
-+      // if it matches, trigger your expand callback
-+      if (myValue === path[parentLevel]) {
-+        onExpandClick(rowData, index, parentLevel, ancestorData);
-+      }
-+    }
- 
-     getEquipmentColorClass = (rowData) => {
-       if(rowData.type){
+import { put, select, takeLatest } from 'redux-saga/effects';
+
+function* handleAutoExpand() {
+  const { expansionPath, currentExpansionLevel } = yield select(state => state.floorPlan);
+  
+  if (!expansionPath || currentExpansionLevel >= expansionPath.length) return;
+
+  // Get the current level data needed for expansion
+  const levelData = yield select(state => {
+    switch(currentExpansionLevel) {
+      case 0: return state.floorPlan.sitesList2;
+      case 1: return state.floorPlan.structuresList2;
+      case 2: return state.floorPlan.floorsList2;
+      case 3: return state.floorPlan.eqpTypeList2;
+      case 4: return state.floorPlan.vendorList2;
+      default: return null;
+    }
+  });
+
+  // Find the matching node index
+  const targetValue = expansionPath[currentExpansionLevel];
+  const nodeIndex = levelData.findIndex(item => 
+    item.siteCd === targetValue || 
+    item.sctructNmTxt === targetValue ||
+    item.floorNmTxt === targetValue ||
+    item.subClass === targetValue ||
+    item.vendor === targetValue
+  );
+
+  if (nodeIndex > -1) {
+    // Trigger expansion for this level
+    yield put({
+      type: types.GET_FLOORPLAN_TREE_DATA_SAGA_2,
+      index: nodeIndex,
+      list: ['sitesList2', 'structuresList2', 'floorsList2', 'eqpTypeList2', 'vendorList2'][currentExpansionLevel],
+      rowData: levelData[nodeIndex],
+      ancestorData: [],
+      filteredRackResults: []
+    });
+
+    // Move to next level after short delay
+    yield new Promise(resolve => setTimeout(resolve, 300));
+    yield put({ type: types.INCREMENT_EXPANSION_LEVEL });
+  }
+}
+
+// Add to your existing watch functions
+export function* floorPlanSaga() {
+  yield takeLatest(types.SET_EXPANSION_PATH, handleAutoExpand);
+  yield takeLatest(types.GET_FLOORPLAN_TREE_DATA_SAGA_2_SUCCESS, handleAutoExpand);
+  // ... keep existing yield statements
+}
