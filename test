@@ -1,0 +1,16 @@
+// FloorPlanView.js - Inside componentDidUpdate
+componentDidUpdate(prevProps) {
+  // ... existing code
+  
+  // Auto-expansion trigger
+  if (this.props.selectedLocateRack !== prevProps.selectedLocateRack && this.props.selectedLocateRack) {
+    const path = [
+      this.props.selectedLocateRack.siteCd,
+      this.props.selectedLocateRack.struct,
+      this.props.selectedLocateRack.floor,
+      this.props.selectedLocateRack.subClass,
+      this.props.selectedLocateRack.vendor
+    ];
+    this.props.dispatch({ type: types.SET_EXPANSION_PATH, path });
+  }
+}
